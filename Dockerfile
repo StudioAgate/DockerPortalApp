@@ -25,7 +25,11 @@ RUN docker-php-ext-install intl
 RUN docker-php-ext-install pdo_mysql
 RUN docker-php-ext-install zip
 
-RUN pecl install apcu && echo "extension=apcu.so" > /usr/local/etc/php/conf.d/apcu.ini
+RUN pecl install apcu \
+    && echo "extension=apcu.so" > /usr/local/etc/php/conf.d/apcu.ini \
+    && echo "date.timezone = Europe/Paris" > /usr/local/etc/php/conf.d/custom.ini \
+    && echo "short_open_tag = off" >> /usr/local/etc/php/conf.d/custom.ini \
+    && echo "apcu.enable_cli = 1" >> /usr/local/etc/php/conf.d/custom.ini
 
 # Now install nodejs and packages
 
