@@ -19,9 +19,8 @@ RUN apk add --no-cache --update libpng-dev libjpeg-turbo-dev icu-dev\
     && echo "date.timezone = Europe/Paris" > /usr/local/etc/php/conf.d/custom.ini \
     && echo "short_open_tag = off" >> /usr/local/etc/php/conf.d/custom.ini \
     && echo "apc.enabled = 1" >> /usr/local/etc/php/conf.d/custom.ini \
-    && apk add --no-cache yarn \
     && apk del .build-deps
-    
+
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 
 WORKDIR /var/www/html
