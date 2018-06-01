@@ -7,7 +7,7 @@ LABEL maintainer="pierstoval@gmail.com"
 # Composer is always used as root in our container
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
-RUN apk add --no-cache --update libpng-dev libjpeg-turbo-dev icu-dev\
+RUN apk add --no-cache --update libpng-dev libjpeg-turbo-dev icu-dev imagemagick \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-install gd \
