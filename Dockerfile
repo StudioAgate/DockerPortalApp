@@ -20,7 +20,7 @@ RUN apk add --no-cache --update libpng-dev libjpeg-turbo-dev icu-dev imagemagick
     && docker-php-ext-install opcache intl pdo_mysql zip \
     && pecl install apcu \
     && docker-php-ext-enable apcu \
-    && composer global require hirak/prestisimo \
+    && composer global require hirak/prestissimo \
     && addgroup foo \
     && adduser -D -h /srv -s /bin/sh -G foo foo \
     && apk del .build-deps
