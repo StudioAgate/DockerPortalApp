@@ -7,6 +7,10 @@ LABEL maintainer="pierstoval@gmail.com"
 # Composer is always used as root in our container
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
+COPY bin/entrypoint.sh /usr/bin/entrypoint.sh
+COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
+COPY --from=composer /usr/bin/composer /usr/local/bin/composer
+
 RUN apk add --no-cache --update libpng-dev libjpeg-turbo-dev icu-dev imagemagick \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-jpeg-dir=/usr/include/ \
@@ -15,12 +19,10 @@ RUN apk add --no-cache --update libpng-dev libjpeg-turbo-dev icu-dev imagemagick
     && docker-php-ext-configure zip \
     && docker-php-ext-install opcache intl pdo_mysql zip \
     && pecl install apcu \
-    && docker-php-ext-enable apcu gd intl pdo_mysql zip \
-    && echo "date.timezone = Europe/Paris" > /usr/local/etc/php/conf.d/custom.ini \
-    && echo "short_open_tag = off" >> /usr/local/etc/php/conf.d/custom.ini \
-    && echo "apc.enabled = 1" >> /usr/local/etc/php/conf.d/custom.ini \
+    && docker-php-ext-enable apcu \
+    && composer global require hirak/prestisimo \
+    && addgroup foo \
+    && adduser -D -h /srv -s /bin/sh -G foo foo \
     && apk del .build-deps
-
-COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 
 WORKDIR /var/www/html
