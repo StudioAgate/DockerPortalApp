@@ -11,7 +11,7 @@ COPY bin/entrypoint.sh /usr/bin/entrypoint.sh
 COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 
-RUN apk add --no-cache --update libpng-dev libjpeg-turbo-dev icu-dev imagemagick \
+RUN apk add --no-cache --update libpng-dev libjpeg-turbo-dev icu-dev imagemagick chromium-chromedriver \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-install gd \
