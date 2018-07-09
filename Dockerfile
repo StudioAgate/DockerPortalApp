@@ -1,6 +1,6 @@
 FROM composer
 
-FROM php:7.2-fpm-alpine
+FROM php:7.2-fpm-stretch
 
 LABEL maintainer="pierstoval@gmail.com"
 
@@ -11,18 +11,24 @@ COPY bin/entrypoint.sh /usr/bin/entrypoint.sh
 COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 
-RUN apk add --no-cache --update libpng-dev libjpeg-turbo-dev icu-dev imagemagick chromium-chromedriver chromium \
-    && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
-    && docker-php-ext-configure gd --with-jpeg-dir=/usr/include/ \
-    && docker-php-ext-install gd \
+RUN apt-get update \
+    && apt-get install -y \
+        libfreetype6-dev \
+        libjpeg62-turbo-dev \
+        libmcrypt-dev \
+        libpng-dev \
+        libicu-dev \
+        imagemagick \
+    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+    && docker-php-ext-install -j$(nproc) gd \
     && docker-php-ext-configure pdo_mysql \
     && docker-php-ext-configure zip \
     && docker-php-ext-install opcache intl pdo_mysql zip \
-    && pecl install apcu \
+    && (echo '' | pecl install apcu) \
     && docker-php-ext-enable apcu \
     && composer global require hirak/prestissimo \
     && addgroup foo \
-    && adduser -D -h /srv -s /bin/sh -G foo foo \
-    && apk del .build-deps
+    && adduser --gecos "" --disabled-password --home=/srv --no-create-home --shell=/bin/sh --ingroup foo foo \
+    && apt-get clean
 
 WORKDIR /var/www/html
