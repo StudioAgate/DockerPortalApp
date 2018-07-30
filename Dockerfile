@@ -19,6 +19,8 @@ RUN apt-get update \
         libpng-dev \
         libicu-dev \
         imagemagick \
+        zlib1g-dev \
+        chromium \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-install -j$(nproc) gd \
     && docker-php-ext-configure pdo_mysql \
