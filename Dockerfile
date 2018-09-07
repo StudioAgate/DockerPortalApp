@@ -28,9 +28,11 @@ RUN apt-get update \
     && docker-php-ext-install opcache intl pdo_mysql zip \
     && (echo '' | pecl install apcu) \
     && docker-php-ext-enable apcu \
-    && composer global require hirak/prestissimo \
+    && composer global require --prefer-dist hirak/prestissimo friendsofphp/php-cs-fixer \
     && addgroup foo \
     && adduser --gecos "" --disabled-password --home=/srv --no-create-home --shell=/bin/sh --ingroup foo foo \
     && apt-get clean
+
+USER foo
 
 WORKDIR /var/www/html
