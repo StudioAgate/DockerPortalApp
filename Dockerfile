@@ -30,7 +30,9 @@ RUN apt-get update \
     && docker-php-ext-enable apcu \
     && composer global require --prefer-dist hirak/prestissimo friendsofphp/php-cs-fixer \
     && addgroup foo \
-    && adduser --gecos "" --disabled-password --home=/srv --no-create-home --shell=/bin/sh --ingroup foo foo \
+    && adduser --gecos "" --disabled-password --home=/srv/ --no-create-home --shell=/bin/sh --ingroup foo foo \
+    && chmod g+rw /srv \
+    && chown foo:foo /srv \
     && apt-get clean
 
 USER foo
