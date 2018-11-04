@@ -31,4 +31,6 @@ RUN apt-get update \
     && composer global require --prefer-dist hirak/prestissimo friendsofphp/php-cs-fixer \
     && apt-get clean
 
+ENV PANTHER_NO_SANDBOX 1
+
 WORKDIR /var/www/html
