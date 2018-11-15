@@ -19,6 +19,7 @@ RUN apt-get update \
         libpng-dev \
         libicu-dev \
         imagemagick \
+        unzip \
         zlib1g-dev \
         chromium \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
