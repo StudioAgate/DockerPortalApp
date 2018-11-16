@@ -34,4 +34,4 @@ RUN apt-get update \
 
 ENV PANTHER_NO_SANDBOX 1
 
-WORKDIR /var/www/html
+WORKDIR /srv
