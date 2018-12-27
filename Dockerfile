@@ -1,6 +1,6 @@
 FROM composer
 
-FROM php:7.2-fpm-stretch
+FROM php:7.3-fpm
 
 LABEL maintainer="pierstoval@gmail.com"
 
@@ -21,6 +21,7 @@ RUN apt-get update \
         imagemagick \
         unzip \
         zlib1g-dev \
+        libzip-dev \
         chromium \
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-install -j$(nproc) gd \
@@ -28,7 +29,8 @@ RUN apt-get update \
     && docker-php-ext-configure zip \
     && docker-php-ext-install opcache intl pdo_mysql zip \
     && (echo '' | pecl install apcu) \
-    && (echo '' | pecl install xdebug) \
+# Re-add xdebug when it works for PHP 7.3 \
+#    && (echo '' | pecl install xdebug) \
     && docker-php-ext-enable apcu \
     && composer global require --prefer-dist hirak/prestissimo friendsofphp/php-cs-fixer \
     && apt-get clean
