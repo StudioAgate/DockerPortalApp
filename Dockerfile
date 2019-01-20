@@ -31,7 +31,7 @@ RUN apt-get update \
     && (echo '' | pecl install apcu) \
     && (echo '' | pecl install xdebug) \
     && docker-php-ext-enable apcu \
-    && composer global require --prefer-dist hirak/prestissimo friendsofphp/php-cs-fixer \
+    && composer global require --prefer-dist hirak/prestissimo \
     && apt-get clean
 
 ENV PANTHER_NO_SANDBOX 1
