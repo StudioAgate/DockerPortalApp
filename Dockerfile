@@ -37,4 +37,6 @@ RUN apt-get update \
 
 ENV PANTHER_NO_SANDBOX 1
 
+ENTRYPOINT ['/usr/bin/entrypoint.sh']
+
 WORKDIR /srv
