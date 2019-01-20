@@ -7,7 +7,9 @@ LABEL maintainer="pierstoval@gmail.com"
 # Composer is always used as root in our container
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
-COPY bin/entrypoint.sh /usr/bin/entrypoint.sh
+COPY bin/entrypoint.sh /entrypoint
+RUN chmod a+x /entrypoint
+
 COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 
@@ -35,7 +37,5 @@ RUN apt-get update \
     && apt-get clean
 
 ENV PANTHER_NO_SANDBOX 1
-
-ENTRYPOINT ['/usr/bin/entrypoint.sh']
 
 WORKDIR /srv
