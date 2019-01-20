@@ -29,8 +29,7 @@ RUN apt-get update \
     && docker-php-ext-configure zip \
     && docker-php-ext-install opcache intl pdo_mysql zip \
     && (echo '' | pecl install apcu) \
-# Re-add xdebug when it works for PHP 7.3 \
-#    && (echo '' | pecl install xdebug) \
+    && (echo '' | pecl install xdebug) \
     && docker-php-ext-enable apcu \
     && composer global require --prefer-dist hirak/prestissimo friendsofphp/php-cs-fixer \
     && apt-get clean
