@@ -38,7 +38,10 @@ RUN apt-get update \
     && mv /tmp/blackfire/blackfire-*.so $(php -r "echo ini_get('extension_dir');")/blackfire.so \
     && printf "extension=blackfire.so\nblackfire.agent_socket=tcp://blackfire:8707\n" > $PHP_INI_DIR/conf.d/blackfire.ini \
     && rm -rf /tmp/blackfire /tmp/blackfire-probe.tar.gz \
-    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+    && docker-php-ext-configure gd \
+        --with-freetype-dir=/usr/include/ \
+        --with-jpeg-dir=/usr/include/ \
+        --with-png-dir=/usr/include/ \
     && docker-php-ext-install -j$(nproc) gd \
     && docker-php-ext-configure pdo_mysql \
     && docker-php-ext-configure zip \
