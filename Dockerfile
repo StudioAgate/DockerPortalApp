@@ -1,5 +1,3 @@
-FROM blackfire/blackfire as blackfire
-
 FROM php:7.2-fpm
 
 LABEL maintainer="pierstoval@gmail.com"
@@ -15,8 +13,7 @@ RUN chmod a+x /entrypoint
 
 COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
-COPY --from=blackfire /usr/bin/blackfire /usr/local/bin/blackfire
-COPY --from=blackfire /usr/bin/blackfire-agent /usr/local/bin/blackfire-agent
+COPY --from=blackfire/blackfire /usr/bin/blackfire* /usr/local/bin/
 
 RUN apt-get update \
     && apt-get install -y \
@@ -25,11 +22,10 @@ RUN apt-get update \
         libmcrypt-dev \
         libpng-dev \
         libicu-dev \
-        imagemagick \
         unzip \
+        libgs-dev \
         zlib1g-dev \
         libzip-dev \
-        chromium \
         curl \
     && version=$(php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;") \
     && curl -A "Docker" -o /tmp/blackfire-probe.tar.gz -D - -L -s https://blackfire.io/api/v1/releases/probe/php/linux/amd64/$version \
@@ -49,6 +45,13 @@ RUN apt-get update \
     && (echo '' | pecl install apcu) \
     && (echo '' | pecl install xdebug) \
     && docker-php-ext-enable apcu \
+    && curl -L "https://imagemagick.org/download/ImageMagick.tar.gz" | tar xz \
+    && cd ImageMagick-* \
+    && ./configure \
+    && make \
+    && make install \
+    && ldconfig /usr/local/lib \
+    && cd .. \
     && composer global require --prefer-dist hirak/prestissimo \
     && apt-get clean
 
