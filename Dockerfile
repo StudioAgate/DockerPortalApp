@@ -16,8 +16,9 @@ COPY --from=blackfire/blackfire /usr/bin/blackfire* /usr/local/bin/
 
 RUN chmod a+x /entrypoint \
     && apt-get update \
-    && build_deps="libfreetype6-dev libjpeg62-turbo-dev libpng-dev zlib1g-dev libgs-dev libicu-dev libmcrypt-dev libzip-dev" \
-    && persistent_deps="libfreetype6 libjpeg62-turbo libpng16-16 libicu57 libmcrypt4 libzip4 zlib1g" \
+    && apt-get upgrade -y \
+    && export build_deps="libfreetype6-dev libjpeg62-turbo-dev libpng-dev zlib1g-dev libgs-dev libicu-dev libmcrypt-dev libzip-dev" \
+    && export persistent_deps="libfreetype6 libjpeg62-turbo libpng16-16 libicu57 libmcrypt4 libzip4 zlib1g" \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
@@ -30,21 +31,21 @@ RUN chmod a+x /entrypoint \
     && `# Docker` \
     && export DOCKER_VERSION=$(curl --silent --fail --retry 3 https://download.docker.com/linux/static/stable/x86_64/ | grep -o -e 'docker-[.0-9]*\.tgz' | sort -r | head -n 1) \
     && DOCKER_URL="https://download.docker.com/linux/static/stable/x86_64/${DOCKER_VERSION}" \
-    && echo Docker URL: $DOCKER_URL \
+    && echo "Docker URL: ${DOCKER_URL}" \
     && curl --silent --show-error --location --fail --retry 3 --output /tmp/docker.tgz "${DOCKER_URL}" \
     && ls -lha /tmp/docker.tgz \
     && tar -xz -C /tmp -f /tmp/docker.tgz \
     && mv /tmp/docker/* /usr/bin \
     && rm -rf /tmp/docker /tmp/docker.tgz \
     && which docker \
-    && docker version \
+    && docker --version \
     \
     && `# Docker-compose` \
     && export DOCKER_COMPOSE_URL="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" \
-    && echo Docker compose URL : ${DOCKER_COMPOSE_URL} \
+    && echo "Docker compose URL : ${DOCKER_COMPOSE_URL}" \
     && curl -L "${DOCKER_COMPOSE_URL}" -o /usr/local/bin/docker-compose \
     && chmod +x /usr/local/bin/docker-compose \
-    && docker-compose version \
+    && docker-compose --version \
     \
     && `# Blackfire` \
     && version=$(php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;") \
@@ -89,8 +90,18 @@ RUN chmod a+x /entrypoint \
     && chmod +x /usr/local/bin/symfony \
     \
     && `# Clean apt to make image smaller` \
-    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $build_deps \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false \
+        libstdc++-6-dev \
+        git \
+        libc6-dev \
+        cpp-6 \
+        gcc-6 \
+        g++-6 \
+        perl-modules-5.24 libperl5.24 \
+        make \
+        $build_deps \
+    && apt-get -y autoremove \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/www/* /var/cache/*
 
 WORKDIR /srv
