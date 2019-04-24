@@ -2,12 +2,12 @@ FROM php:7.3-fpm
 
 LABEL maintainer="pierstoval@gmail.com"
 
-ENV COMPOSER_ALLOW_SUPERUSER = 1 \
-    DOCKER_COMPOSE_VERSION = 1.24.0 \
-    BLACKFIRE_CONFIG = /dev/null \
-    BLACKFIRE_LOG_LEVEL = 1 \
-    BLACKFIRE_SOCKET = tcp://0.0.0.0:8707 \
-    PANTHER_NO_SANDBOX = 1
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    DOCKER_COMPOSE_VERSION=1.24.0 \
+    BLACKFIRE_CONFIG=/dev/null \
+    BLACKFIRE_LOG_LEVEL=1 \
+    BLACKFIRE_SOCKET=tcp://0.0.0.0:8707 \
+    PANTHER_NO_SANDBOX=1
 
 COPY bin/entrypoint.sh /entrypoint
 COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
@@ -16,20 +16,16 @@ COPY --from=blackfire/blackfire /usr/bin/blackfire* /usr/local/bin/
 
 RUN chmod a+x /entrypoint \
     && apt-get update \
+    && build_deps="libfreetype6-dev libjpeg62-turbo-dev libpng-dev zlib1g-dev libgs-dev libicu-dev libmcrypt-dev libzip-dev" \
+    && persistent_deps="libfreetype6 libjpeg62-turbo libpng16-16 libicu57 libmcrypt4 libzip4 zlib1g" \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
         git \
-        libfreetype6-dev \
-        libgs-dev \
-        libicu-dev \
-        libjpeg62-turbo-dev \
-        libmcrypt-dev \
-        libpng-dev \
-        libzip-dev \
         openssh-client \
         unzip \
-        zlib1g-dev \
+        $build_deps \
+        $persistent_deps \
     \
     && `# Docker` \
     && export DOCKER_VERSION=$(curl --silent --fail --retry 3 https://download.docker.com/linux/static/stable/x86_64/ | grep -o -e 'docker-[.0-9]*\.tgz' | sort -r | head -n 1) \
@@ -41,14 +37,14 @@ RUN chmod a+x /entrypoint \
     && mv /tmp/docker/* /usr/bin \
     && rm -rf /tmp/docker /tmp/docker.tgz \
     && which docker \
-    && (docker version || true) \
+    && docker version \
     \
     && `# Docker-compose` \
     && export DOCKER_COMPOSE_URL="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" \
     && echo Docker compose URL : ${DOCKER_COMPOSE_URL} \
     && curl -L "${DOCKER_COMPOSE_URL}" -o /usr/local/bin/docker-compose \
     && chmod +x /usr/local/bin/docker-compose \
-    && (docker-compose version || true) \
+    && docker-compose version \
     \
     && `# Blackfire` \
     && version=$(php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;") \
@@ -93,7 +89,7 @@ RUN chmod a+x /entrypoint \
     && chmod +x /usr/local/bin/symfony \
     \
     && `# Clean apt to make image smaller` \
-    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $buildDeps \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $build_deps \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
