@@ -6,6 +6,7 @@ ENV COMPOSER_ALLOW_SUPERUSER=1 \
     DOCKER_COMPOSE_VERSION=1.24.0 \
     BLACKFIRE_CONFIG=/dev/null \
     BLACKFIRE_LOG_LEVEL=1 \
+    GOSU_VERSION=1.11 \
     BLACKFIRE_SOCKET=tcp://0.0.0.0:8707 \
     PANTHER_NO_SANDBOX=1
 
@@ -28,18 +29,6 @@ RUN chmod a+x /entrypoint \
         unzip \
         $build_deps \
         $persistent_deps \
-    \
-    && `# Docker` \
-    && curl -sSL https://get.docker.com/ | sh \
-    && which docker \
-    && docker --version \
-    \
-    && `# Docker-compose` \
-    && export DOCKER_COMPOSE_URL="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" \
-    && echo "Docker compose URL : ${DOCKER_COMPOSE_URL}" \
-    && curl -L "${DOCKER_COMPOSE_URL}" -o /usr/local/bin/docker-compose \
-    && chmod +x /usr/local/bin/docker-compose \
-    && docker-compose --version \
     \
     && `# Blackfire` \
     && version=$(php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;") \
@@ -82,6 +71,12 @@ RUN chmod a+x /entrypoint \
     && curl -sS https://get.symfony.com/cli/v$SYMFONYCLI_VERSION/symfony_linux_$SYMFONYCLI_MACHINE > /usr/local/bin/symfony.gz \
     && gzip -d /usr/local/bin/symfony.gz \
     && chmod +x /usr/local/bin/symfony \
+    \
+    && `# User management for entrypoint` \
+    && curl -L -s -o /bin/gosu https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-$(dpkg --print-architecture | awk -F- '{ print $NF }') \
+    && chmod +x /bin/gosu \
+    && groupadd foo \
+    && adduser --home=/home --shell=/bin/bash --ingroup=foo --disabled-password --quiet --gecos "" foo \
     \
     && `# Clean apt to make image smaller` \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false \
