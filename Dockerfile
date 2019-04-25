@@ -81,7 +81,6 @@ RUN chmod a+x /entrypoint \
     && `# Clean apt to make image smaller` \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false \
         libstdc++-6-dev \
-        git \
         libc6-dev \
         cpp-6 \
         gcc-6 \
