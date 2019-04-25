@@ -23,20 +23,14 @@ RUN chmod a+x /entrypoint \
         ca-certificates \
         curl \
         git \
+        iptables \
         openssh-client \
         unzip \
         $build_deps \
         $persistent_deps \
     \
     && `# Docker` \
-    && export DOCKER_VERSION=$(curl --silent --fail --retry 3 https://download.docker.com/linux/static/stable/x86_64/ | grep -o -e 'docker-[.0-9]*\.tgz' | sort -r | head -n 1) \
-    && DOCKER_URL="https://download.docker.com/linux/static/stable/x86_64/${DOCKER_VERSION}" \
-    && echo "Docker URL: ${DOCKER_URL}" \
-    && curl --silent --show-error --location --fail --retry 3 --output /tmp/docker.tgz "${DOCKER_URL}" \
-    && ls -lha /tmp/docker.tgz \
-    && tar -xz -C /tmp -f /tmp/docker.tgz \
-    && mv /tmp/docker/* /usr/bin \
-    && rm -rf /tmp/docker /tmp/docker.tgz \
+    && curl -sSL https://get.docker.com/ | sh \
     && which docker \
     && docker --version \
     \
@@ -98,7 +92,6 @@ RUN chmod a+x /entrypoint \
         gcc-6 \
         g++-6 \
         perl-modules-5.24 libperl5.24 \
-        make \
         $build_deps \
     && apt-get -y autoremove \
     && apt-get clean \
