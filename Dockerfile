@@ -18,17 +18,16 @@ COPY --from=blackfire/blackfire /usr/bin/blackfire* /usr/local/bin/
 RUN chmod a+x /entrypoint \
     && apt-get update \
     && apt-get upgrade -y \
-    && export build_deps="libfreetype6-dev libjpeg62-turbo-dev libpng-dev zlib1g-dev libgs-dev libicu-dev libmcrypt-dev libzip-dev" \
-    && export persistent_deps="libfreetype6 libjpeg62-turbo libpng16-16 libicu57 libmcrypt4 libzip4 zlib1g" \
+    && export build_libs="libfreetype6-dev libjpeg62-turbo-dev libpng-dev zlib1g-dev libgs-dev libicu-dev libmcrypt-dev libzip-dev" \
+    && export persistent_libs="libfreetype6 libjpeg62-turbo libpng16-16 libicu57 libmcrypt4 libzip4 zlib1g" \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
         git \
-        iptables \
         openssh-client \
         unzip \
-        $build_deps \
-        $persistent_deps \
+        $build_libs \
+        $persistent_libs \
     \
     && `# Blackfire` \
     && version=$(php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;") \
@@ -78,15 +77,10 @@ RUN chmod a+x /entrypoint \
     && groupadd foo \
     && adduser --home=/home --shell=/bin/bash --ingroup=foo --disabled-password --quiet --gecos "" foo \
     \
-    && `# Clean apt to make image smaller` \
+    && `# Clean apt and remove unused libs/packages to make image smaller` \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false \
-        libstdc++-6-dev \
-        libc6-dev \
-        cpp-6 \
-        gcc-6 \
-        g++-6 \
-        perl-modules-5.24 libperl5.24 \
-        $build_deps \
+        libstdc++-6-dev libc6-dev cpp-6 gcc-6 g++-6 tzdata rsync \
+        $build_libs \
     && apt-get -y autoremove \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/www/* /var/cache/*
