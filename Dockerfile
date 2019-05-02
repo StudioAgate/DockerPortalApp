@@ -10,13 +10,12 @@ ENV COMPOSER_ALLOW_SUPERUSER=1 \
     BLACKFIRE_SOCKET=tcp://0.0.0.0:8707 \
     PANTHER_NO_SANDBOX=1
 
-COPY bin/entrypoint.sh /entrypoint
+COPY bin/entrypoint.bash /bin/entrypoint
 COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 COPY --from=blackfire/blackfire /usr/bin/blackfire* /usr/local/bin/
 
-RUN chmod a+x /entrypoint \
-    && apt-get update \
+RUN apt-get update \
     && apt-get upgrade -y \
     && export build_libs="libfreetype6-dev libjpeg62-turbo-dev libpng-dev zlib1g-dev libgs-dev libicu-dev libmcrypt-dev libzip-dev" \
     && export persistent_libs="libfreetype6 libjpeg62-turbo libpng16-16 libicu57 libmcrypt4 libzip4 zlib1g" \
@@ -86,3 +85,9 @@ RUN chmod a+x /entrypoint \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/www/* /var/cache/*
 
 WORKDIR /srv
+
+ENTRYPOINT ['/bin/entrypoint']
+
+CMD ['symfony', 'serve', '--dir=/srv', '--allow-http', '--no-tls', '--port=8000']
+
+EXPOSE 8000
