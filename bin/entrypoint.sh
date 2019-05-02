@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 uid=$(stat -c %u /srv)
 gid=$(stat -c %g /srv)
 
-if [ $uid == 0 ] && [ $gid == 0 ]; then
+if [ "${uid}" -eq 0 ] && [ "${gid}" -eq 0 ]; then
     if [ $# -eq 0 ]; then
         php-fpm
     else

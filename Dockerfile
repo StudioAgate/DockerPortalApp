@@ -8,9 +8,10 @@ ENV COMPOSER_ALLOW_SUPERUSER=1 \
     BLACKFIRE_LOG_LEVEL=1 \
     GOSU_VERSION=1.11 \
     BLACKFIRE_SOCKET=tcp://0.0.0.0:8707 \
-    PANTHER_NO_SANDBOX=1
+    PANTHER_NO_SANDBOX=1 \
+    IMAGEMAGICK_VERSION=7.0.8-42
 
-COPY bin/entrypoint.bash /bin/entrypoint
+COPY bin/entrypoint.sh /bin/entrypoint
 COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 COPY --from=blackfire/blackfire /usr/bin/blackfire* /usr/local/bin/
@@ -51,7 +52,7 @@ RUN apt-get update \
     && (echo '' | pecl install xdebug) \
     \
     && `# ImageMagick` \
-    && curl -L "https://imagemagick.org/download/ImageMagick.tar.gz" | tar xz \
+    && curl -L "https://github.com/ImageMagick/ImageMagick/archive/${IMAGEMAGICK_VERSION}.tar.gz" | tar xz \
     && cd ImageMagick-* \
     && ./configure \
     && make \
@@ -86,7 +87,7 @@ RUN apt-get update \
 
 WORKDIR /srv
 
-ENTRYPOINT ['/bin/entrypoint']
+ENTRYPOINT ["/bin/entrypoint"]
 
 CMD ['symfony', 'serve', '--dir=/srv', '--allow-http', '--no-tls', '--port=8000']
 
