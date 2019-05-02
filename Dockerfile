@@ -74,8 +74,8 @@ RUN apt-get update \
     && `# User management for entrypoint` \
     && curl -L -s -o /bin/gosu https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-$(dpkg --print-architecture | awk -F- '{ print $NF }') \
     && chmod +x /bin/gosu \
-    && groupadd foo \
-    && adduser --home=/home --shell=/bin/bash --ingroup=foo --disabled-password --quiet --gecos "" foo \
+    && groupadd _www \
+    && adduser --home=/home --shell=/bin/bash --ingroup=_www --disabled-password --quiet --gecos "" --force-badname _www \
     \
     && `# Clean apt and remove unused libs/packages to make image smaller` \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false \
