@@ -89,6 +89,6 @@ WORKDIR /srv
 
 ENTRYPOINT ["/bin/entrypoint"]
 
-CMD ['symfony', 'serve', '--dir=/srv', '--allow-http', '--no-tls', '--port=8000']
+CMD ["symfony", "serve", "--dir=/srv", "--allow-http", "--no-tls", "--port=8000"]
 
 EXPOSE 8000
