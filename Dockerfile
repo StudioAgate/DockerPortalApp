@@ -19,7 +19,8 @@ COPY --from=blackfire/blackfire /usr/bin/blackfire* /usr/local/bin/
 RUN apt-get update \
     && apt-get upgrade -y \
     && export build_libs="libfreetype6-dev libjpeg62-turbo-dev libpng-dev zlib1g-dev libgs-dev libicu-dev libmcrypt-dev libzip-dev" \
-    && export persistent_libs="libfreetype6 libjpeg62-turbo libpng16-16 libicu57 libmcrypt4 libzip4 zlib1g" \
+    && `# Mostly ImageMagick necessary libs, and some for PHP (zip, etc.)` \
+    && export persistent_libs="libfreetype6 libjpeg62-turbo libpng16-16 libicu57 libmcrypt4 libzip4 zlib1g libjbig0 liblcms2-2 libtiff5 libfontconfig1 libopenjp2-7 libgomp1" \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
