@@ -27,6 +27,7 @@ RUN apt-get update \
         git \
         openssh-client \
         unzip \
+        chromium \
         $build_libs \
         $persistent_libs \
     \
