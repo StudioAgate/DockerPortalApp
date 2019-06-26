@@ -50,8 +50,18 @@ RUN apt-get update \
     && docker-php-ext-configure zip \
     && docker-php-ext-install opcache intl pdo_mysql zip \
     && (echo '' | pecl install apcu) \
+    && (echo '' | pecl install pcov) \
     && docker-php-ext-enable apcu \
     && (echo '' | pecl install xdebug) \
+    \
+    && `# Jakzal/toolbox` \
+    && curl -s https://api.github.com/repos/jakzal/toolbox/releases/latest \
+         | grep "browser_download_url.*toolbox.phar" \
+         | cut -d '"' -f 4 \
+         | xargs curl -Ls -o /usr/local/bin/toolbox \
+    && chmod +x /usr/local/bin/toolbox \
+    && mkdir /tools \
+    && /usr/local/bin/toolbox install --no-interaction --target-dir=/tools \
     \
     && `# ImageMagick` \
     && curl -L "https://github.com/ImageMagick/ImageMagick/archive/${IMAGEMAGICK_VERSION}.tar.gz" | tar xz \
