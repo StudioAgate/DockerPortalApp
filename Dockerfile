@@ -3,32 +3,57 @@ FROM php:7.3-fpm
 LABEL maintainer="pierstoval@gmail.com"
 
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
-    DOCKER_COMPOSE_VERSION=1.24.0 \
+    DOCKER_COMPOSE_VERSION=1.24.1 \
     BLACKFIRE_CONFIG=/dev/null \
     BLACKFIRE_LOG_LEVEL=1 \
     GOSU_VERSION=1.11 \
     BLACKFIRE_SOCKET=tcp://0.0.0.0:8707 \
     PANTHER_NO_SANDBOX=1 \
-    IMAGEMAGICK_VERSION=7.0.8-42
+    IMAGEMAGICK_VERSION=7.0.8-50 \
+    TOOLBOX_TARGET_DIR="/tools" \
+    TOOLBOX_VERSION="1.6.6" \
+    PATH="$PATH:$TOOLBOX_TARGET_DIR:$TOOLBOX_TARGET_DIR/.composer/vendor/bin:/tools/QualityAnalyzer/bin:$TOOLBOX_TARGET_DIR/DesignPatternDetector/bin:$TOOLBOX_TARGET_DIR/EasyCodingStandard/bin"
 
 COPY bin/entrypoint.sh /bin/entrypoint
 COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 COPY --from=blackfire/blackfire /usr/bin/blackfire* /usr/local/bin/
 
-RUN apt-get update \
+RUN set -xe \
+    && apt-get update \
     && apt-get upgrade -y \
-    && export build_libs="libfreetype6-dev libjpeg62-turbo-dev libpng-dev zlib1g-dev libgs-dev libicu-dev libmcrypt-dev libzip-dev" \
+    && `# Libs that are already installed or needed, and that will be removed at the end` \
+    && export BUILD_LIBS=" \
+        autoconf \
+        file \
+        g++ \
+        gcc \
+        libc-dev \
+        libfreetype6-dev \
+        libgs-dev \
+        libicu-dev \
+        libjpeg62-turbo-dev \
+        libmcrypt-dev \
+        libpng-dev \
+        libstdc++-6-dev libc6-dev cpp-6 gcc-6 g++-6 tzdata rsync \
+        libzip-dev \
+        pkg-config \
+        re2c \
+        zlib1g-dev \
+    " \
     && `# Mostly ImageMagick necessary libs, and some for PHP (zip, etc.)` \
     && export persistent_libs="libfreetype6 libjpeg62-turbo libpng16-16 libicu57 libmcrypt4 libzip4 zlib1g libjbig0 liblcms2-2 libtiff5 libfontconfig1 libopenjp2-7 libgomp1" \
+    \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
+        make \
         curl \
         git \
+        graphviz \
         openssh-client \
         unzip \
         chromium \
-        $build_libs \
+        $BUILD_LIBS \
         $persistent_libs \
     \
     && `# Blackfire` \
@@ -55,13 +80,10 @@ RUN apt-get update \
     && (echo '' | pecl install xdebug) \
     \
     && `# Jakzal/toolbox` \
-    && curl -s https://api.github.com/repos/jakzal/toolbox/releases/latest \
-         | grep "browser_download_url.*toolbox.phar" \
-         | cut -d '"' -f 4 \
-         | xargs curl -Ls -o /usr/local/bin/toolbox \
-    && chmod +x /usr/local/bin/toolbox \
-    && mkdir /tools \
-    && /usr/local/bin/toolbox install --no-interaction --target-dir=/tools \
+    && git clone https://github.com/nikic/php-ast.git && cd php-ast && phpize && ./configure && make && make install && cd .. && rm -rf php-ast && docker-php-ext-enable ast \
+    && docker-php-ext-install zip pcntl \
+    && mkdir -p $TOOLBOX_TARGET_DIR && curl -Ls https://github.com/jakzal/toolbox/releases/download/v$TOOLBOX_VERSION/toolbox.phar -o $TOOLBOX_TARGET_DIR/toolbox && chmod +x $TOOLBOX_TARGET_DIR/toolbox \
+    && php $TOOLBOX_TARGET_DIR/toolbox install \
     \
     && `# ImageMagick` \
     && curl -L "https://github.com/ImageMagick/ImageMagick/archive/${IMAGEMAGICK_VERSION}.tar.gz" | tar xz \
@@ -78,8 +100,10 @@ RUN apt-get update \
     \
     && `# Symfony CLI` \
     && SYMFONYCLI_VERSION=`curl -sS https://get.symfony.com/cli/LATEST` \
+    && echo "Symfony CLI version: ${SYMFONYCLI_VERSION}" \
     && [[ "i386" = `uname -m` ]] && SYMFONYCLI_MACHINE="386" || SYMFONYCLI_MACHINE="amd64" \
-    && curl -sS https://get.symfony.com/cli/v$SYMFONYCLI_VERSION/symfony_linux_$SYMFONYCLI_MACHINE > /usr/local/bin/symfony.gz \
+    && echo "Symfony CLI architecture: ${SYMFONYCLI_MACHINE}" \
+    && curl -sS "https://get.symfony.com/cli/v${SYMFONYCLI_VERSION}/symfony_linux_${SYMFONYCLI_MACHINE}" -o /usr/local/bin/symfony.gz \
     && gzip -d /usr/local/bin/symfony.gz \
     && chmod +x /usr/local/bin/symfony \
     \
@@ -90,9 +114,7 @@ RUN apt-get update \
     && adduser --home=/home --shell=/bin/bash --ingroup=_www --disabled-password --quiet --gecos "" --force-badname _www \
     \
     && `# Clean apt and remove unused libs/packages to make image smaller` \
-    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false \
-        libstdc++-6-dev libc6-dev cpp-6 gcc-6 g++-6 tzdata rsync \
-        $build_libs \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $BUILD_LIBS \
     && apt-get -y autoremove \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/www/* /var/cache/*
