@@ -3,16 +3,23 @@ FROM php:7.3-fpm
 LABEL maintainer="pierstoval@gmail.com"
 
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
-    DOCKER_COMPOSE_VERSION=1.24.1 \
     BLACKFIRE_CONFIG=/dev/null \
     BLACKFIRE_LOG_LEVEL=1 \
     GOSU_VERSION=1.11 \
     BLACKFIRE_SOCKET=tcp://0.0.0.0:8707 \
     PANTHER_NO_SANDBOX=1 \
     IMAGEMAGICK_VERSION=7.0.8-50 \
+    SYMFONYCLI_VERSION="4.5.5" \
     TOOLBOX_TARGET_DIR="/tools" \
-    TOOLBOX_VERSION="1.6.6" \
-    PATH="$PATH:$TOOLBOX_TARGET_DIR:$TOOLBOX_TARGET_DIR/.composer/vendor/bin:/tools/QualityAnalyzer/bin:$TOOLBOX_TARGET_DIR/DesignPatternDetector/bin:$TOOLBOX_TARGET_DIR/EasyCodingStandard/bin"
+    TOOLBOX_VERSION="1.6.6"
+
+ENV PATH="$PATH:/tools"
+ENV PATH="$PATH:/tools/.composer/vendor/bin"
+ENV PATH="$PATH:/tools/QualityAnalyzer/bin"
+ENV PATH="$PATH:/tools/DesignPatternDetector/bin"
+ENV PATH="$PATH:/tools/EasyCodingStandard/bin"
+ENV PATH="$PATH:/tools/.composer/vendor-bin/symfony/vendor/bin/simple-phpunit"
+ENV PATH="$PATH:/tools/.composer/vendor-bin/tools/vendor/bin/"
 
 COPY bin/entrypoint.sh /bin/entrypoint
 COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
@@ -82,11 +89,13 @@ RUN set -xe \
     && `# Jakzal/toolbox` \
     && git clone https://github.com/nikic/php-ast.git && cd php-ast && phpize && ./configure && make && make install && cd .. && rm -rf php-ast && docker-php-ext-enable ast \
     && docker-php-ext-install zip pcntl \
-    && mkdir -p $TOOLBOX_TARGET_DIR && curl -Ls https://github.com/jakzal/toolbox/releases/download/v$TOOLBOX_VERSION/toolbox.phar -o $TOOLBOX_TARGET_DIR/toolbox && chmod +x $TOOLBOX_TARGET_DIR/toolbox \
-    && php $TOOLBOX_TARGET_DIR/toolbox install \
+    && mkdir -p $TOOLBOX_TARGET_DIR \
+    && (curl -s https://api.github.com/repos/jakzal/toolbox/releases/latest | grep "browser_download_url.*toolbox.phar" | cut -d '"' -f 4 | xargs curl -Ls -o $TOOLBOX_TARGET_DIR/toolbox) \
+    && chmod +x $TOOLBOX_TARGET_DIR/toolbox \
+    && (COMPOSER_HOME=$TOOLBOX_TARGET_DIR/.composer php $TOOLBOX_TARGET_DIR/toolbox install --exclude-tag exclude-php:7.3 || true) \
     \
     && `# ImageMagick` \
-    && curl -L "https://github.com/ImageMagick/ImageMagick/archive/${IMAGEMAGICK_VERSION}.tar.gz" | tar xz \
+    && (curl -L "https://github.com/ImageMagick/ImageMagick/archive/${IMAGEMAGICK_VERSION}.tar.gz" | tar xz) \
     && cd ImageMagick-* \
     && ./configure \
     && make \
@@ -95,15 +104,15 @@ RUN set -xe \
     && cd .. \
     \
     && `# Composer` \
-    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+    && (curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer) \
     && composer global require --prefer-dist symfony/flex \
     \
     && `# Symfony CLI` \
-    && SYMFONYCLI_VERSION=`curl -sS https://get.symfony.com/cli/LATEST` \
     && echo "Symfony CLI version: ${SYMFONYCLI_VERSION}" \
-    && [[ "i386" = `uname -m` ]] && SYMFONYCLI_MACHINE="386" || SYMFONYCLI_MACHINE="amd64" \
+    && export SYMFONYCLI_MACHINE="amd64" \
+    && (if [[ "i386" = `uname -m` ]]; then export SYMFONYCLI_MACHINE="386"; fi) \
     && echo "Symfony CLI architecture: ${SYMFONYCLI_MACHINE}" \
-    && curl -sS "https://get.symfony.com/cli/v${SYMFONYCLI_VERSION}/symfony_linux_${SYMFONYCLI_MACHINE}" -o /usr/local/bin/symfony.gz \
+    && curl -sS https://get.symfony.com/cli/v${SYMFONYCLI_VERSION}/symfony_linux_${SYMFONYCLI_MACHINE} -o /usr/local/bin/symfony.gz \
     && gzip -d /usr/local/bin/symfony.gz \
     && chmod +x /usr/local/bin/symfony \
     \
