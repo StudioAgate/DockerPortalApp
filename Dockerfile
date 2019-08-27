@@ -9,9 +9,7 @@ ENV COMPOSER_ALLOW_SUPERUSER=1 \
     BLACKFIRE_SOCKET=tcp://0.0.0.0:8707 \
     PANTHER_NO_SANDBOX=1 \
     IMAGEMAGICK_VERSION=7.0.8-50 \
-    SYMFONYCLI_VERSION="4.5.5" \
-    TOOLBOX_TARGET_DIR="/tools" \
-    TOOLBOX_VERSION="1.6.6"
+    SYMFONYCLI_VERSION="4.6.4"
 
 ENV PATH="$PATH:/tools"
 ENV PATH="$PATH:/tools/.composer/vendor/bin"
@@ -23,45 +21,58 @@ ENV PATH="$PATH:/tools/.composer/vendor-bin/tools/vendor/bin/"
 
 COPY bin/entrypoint.sh /bin/entrypoint
 COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
-COPY --from=composer /usr/bin/composer /usr/local/bin/composer
-COPY --from=blackfire/blackfire /usr/bin/blackfire* /usr/local/bin/
+COPY --from=blackfire/blackfire /usr/local/bin/blackfire* /usr/local/bin/
 
 RUN set -xe \
     && apt-get update \
     && apt-get upgrade -y \
+    \
     && `# Libs that are already installed or needed, and that will be removed at the end` \
     && export BUILD_LIBS=" \
-        autoconf \
-        file \
-        g++ \
-        gcc \
-        libc-dev \
-        libfreetype6-dev \
-        libgs-dev \
-        libicu-dev \
-        libjpeg62-turbo-dev \
-        libmcrypt-dev \
-        libpng-dev \
-        libstdc++-6-dev libc6-dev cpp-6 gcc-6 g++-6 tzdata rsync \
-        libzip-dev \
-        pkg-config \
-        re2c \
-        zlib1g-dev \
+        `# php gd` libfreetype6-dev libjpeg-dev libjpeg62-turbo-dev libpng-dev \
+        `# php intl` libicu-dev \
+        git \
     " \
+    \
+    && `# Libs that may already be installed and we will remove to make the image lighter` \
+    && export REMOVE_LIBS=" \
+        autoconf file g++ gcc libc-dev libc6-dev tzdata pkg-config re2c libperl* \
+    " \
+    \
     && `# Mostly ImageMagick necessary libs, and some for PHP (zip, etc.)` \
-    && export persistent_libs="libfreetype6 libjpeg62-turbo libpng16-16 libicu57 libmcrypt4 libzip4 zlib1g libjbig0 liblcms2-2 libtiff5 libfontconfig1 libopenjp2-7 libgomp1" \
+    && export PERSISTENT_LIBS=" \
+        `# php zip` zlib1g-dev libzip-dev \
+    " \
     \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         make \
         curl \
-        git \
         graphviz \
         openssh-client \
         unzip \
         chromium \
         $BUILD_LIBS \
-        $persistent_libs \
+        $PERSISTENT_LIBS \
+    \
+    && `# PHP extensions` \
+    && docker-php-ext-configure gd \
+        --with-freetype-dir=/usr/include/ \
+        --with-jpeg-dir=/usr/include/ \
+        --with-png-dir=/usr/include/ \
+    && docker-php-ext-install -j$(nproc) gd \
+    && docker-php-ext-configure intl \
+    && docker-php-ext-configure opcache \
+    && docker-php-ext-configure pdo_mysql \
+    && docker-php-ext-configure zip \
+    && docker-php-ext-install intl \
+    && docker-php-ext-install opcache \
+    && docker-php-ext-install pdo_mysql \
+    && docker-php-ext-install zip \
+    && (echo '' | pecl install apcu) \
+    && (echo '' | pecl install pcov) \
+    && docker-php-ext-enable apcu \
+    && (echo '' | pecl install xdebug) \
     \
     && `# Blackfire` \
     && version=$(php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;") \
@@ -72,27 +83,13 @@ RUN set -xe \
     && printf "extension=blackfire.so\nblackfire.agent_socket=tcp://blackfire:8707\n" > $PHP_INI_DIR/conf.d/blackfire.ini \
     && rm -rf /tmp/blackfire /tmp/blackfire-probe.tar.gz \
     \
-    && `# PHP extensions` \
-    && docker-php-ext-configure gd \
-        --with-freetype-dir=/usr/include/ \
-        --with-jpeg-dir=/usr/include/ \
-        --with-png-dir=/usr/include/ \
-    && docker-php-ext-install -j$(nproc) gd \
-    && docker-php-ext-configure pdo_mysql \
-    && docker-php-ext-configure zip \
-    && docker-php-ext-install opcache intl pdo_mysql zip \
-    && (echo '' | pecl install apcu) \
-    && (echo '' | pecl install pcov) \
-    && docker-php-ext-enable apcu \
-    && (echo '' | pecl install xdebug) \
+    && `# Composer` \
+    && (curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer) \
+    && composer global require --prefer-dist symfony/flex \
     \
-    && `# Jakzal/toolbox` \
-    && git clone https://github.com/nikic/php-ast.git && cd php-ast && phpize && ./configure && make && make install && cd .. && rm -rf php-ast && docker-php-ext-enable ast \
-    && docker-php-ext-install zip pcntl \
-    && mkdir -p $TOOLBOX_TARGET_DIR \
-    && (curl -s https://api.github.com/repos/jakzal/toolbox/releases/latest | grep "browser_download_url.*toolbox.phar" | cut -d '"' -f 4 | xargs curl -Ls -o $TOOLBOX_TARGET_DIR/toolbox) \
-    && chmod +x $TOOLBOX_TARGET_DIR/toolbox \
-    && (COMPOSER_HOME=$TOOLBOX_TARGET_DIR/.composer php $TOOLBOX_TARGET_DIR/toolbox install --exclude-tag exclude-php:7.3 || true) \
+    && `# Static analysis` \
+    && composer global require phpstan/phpstan-shim && mv /root/.composer/vendor/bin/phpstan.phar /usr/local/bin/phpstan \
+    && curl -L https://cs.symfony.com/download/php-cs-fixer-v2.phar -o /usr/local/bin/php-cs-fixer && chmod a+x /usr/local/bin/php-cs-fixer \
     \
     && `# ImageMagick` \
     && (curl -L "https://github.com/ImageMagick/ImageMagick/archive/${IMAGEMAGICK_VERSION}.tar.gz" | tar xz) \
@@ -102,10 +99,6 @@ RUN set -xe \
     && make install \
     && ldconfig /usr/local/lib \
     && cd .. \
-    \
-    && `# Composer` \
-    && (curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer) \
-    && composer global require --prefer-dist symfony/flex \
     \
     && `# Symfony CLI` \
     && echo "Symfony CLI version: ${SYMFONYCLI_VERSION}" \
@@ -123,10 +116,11 @@ RUN set -xe \
     && adduser --home=/home --shell=/bin/bash --ingroup=_www --disabled-password --quiet --gecos "" --force-badname _www \
     \
     && `# Clean apt and remove unused libs/packages to make image smaller` \
-    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $BUILD_LIBS \
+    && composer clearcache \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $BUILD_LIBS $REMOVE_LIBS \
     && apt-get -y autoremove \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/www/* /var/cache/*
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/www/* /var/cache/* /root/.composer/cache
 
 WORKDIR /srv
 
