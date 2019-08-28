@@ -36,7 +36,7 @@ RUN set -xe \
     \
     && `# Libs that may already be installed and we will remove to make the image lighter` \
     && export REMOVE_LIBS=" \
-        autoconf file g++ gcc libc-dev libc6-dev tzdata pkg-config re2c libperl* \
+        autoconf file g++ gcc tzdata pkg-config re2c libperl* \
     " \
     \
     && `# Mostly ImageMagick necessary libs, and some for PHP (zip, etc.)` \
