@@ -2,22 +2,15 @@ FROM php:7.3-fpm
 
 LABEL maintainer="pierstoval@gmail.com"
 
-ENV COMPOSER_ALLOW_SUPERUSER=1 \
-    BLACKFIRE_CONFIG=/dev/null \
+ENV BLACKFIRE_CONFIG=/dev/null \
     BLACKFIRE_LOG_LEVEL=1 \
     GOSU_VERSION=1.11 \
     BLACKFIRE_SOCKET=tcp://0.0.0.0:8707 \
     PANTHER_NO_SANDBOX=1 \
     IMAGEMAGICK_VERSION=7.0.8-50 \
+    PATH=/home/.composer/vendor/bin:$PATH \
+    RUN_USER="_www" \
     SYMFONYCLI_VERSION="4.6.4"
-
-ENV PATH="$PATH:/tools"
-ENV PATH="$PATH:/tools/.composer/vendor/bin"
-ENV PATH="$PATH:/tools/QualityAnalyzer/bin"
-ENV PATH="$PATH:/tools/DesignPatternDetector/bin"
-ENV PATH="$PATH:/tools/EasyCodingStandard/bin"
-ENV PATH="$PATH:/tools/.composer/vendor-bin/symfony/vendor/bin/simple-phpunit"
-ENV PATH="$PATH:/tools/.composer/vendor-bin/tools/vendor/bin/"
 
 COPY bin/entrypoint.sh /bin/entrypoint
 COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
@@ -31,12 +24,6 @@ RUN set -xe \
     && export BUILD_LIBS=" \
         `# php gd` libfreetype6-dev libjpeg-dev libjpeg62-turbo-dev libpng-dev \
         `# php intl` libicu-dev \
-        git \
-    " \
-    \
-    && `# Libs that may already be installed and we will remove to make the image lighter` \
-    && export REMOVE_LIBS=" \
-        autoconf file g++ gcc tzdata pkg-config re2c libperl* \
     " \
     \
     && `# Mostly ImageMagick necessary libs, and some for PHP (zip, etc.)` \
@@ -47,6 +34,7 @@ RUN set -xe \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         make \
+        git \
         curl \
         graphviz \
         openssh-client \
@@ -54,6 +42,14 @@ RUN set -xe \
         chromium \
         $BUILD_LIBS \
         $PERSISTENT_LIBS \
+    \
+    && `# User management for entrypoint` \
+    && curl -L -s -o /bin/gosu https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-$(dpkg --print-architecture | awk -F- '{ print $NF }') \
+    && chmod +x /bin/gosu \
+    && mkdir -p /home \
+    && groupadd ${RUN_USER} \
+    && adduser --home=/home --shell=/bin/bash --ingroup=${RUN_USER} --disabled-password --quiet --gecos "" --force-badname ${RUN_USER} \
+    && chown ${RUN_USER}:${RUN_USER} /home \
     \
     && `# PHP extensions` \
     && docker-php-ext-configure gd \
@@ -85,11 +81,16 @@ RUN set -xe \
     \
     && `# Composer` \
     && (curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer) \
-    && composer global require --prefer-dist symfony/flex \
+    && runuser -l ${RUN_USER} -c 'composer global require --prefer-dist symfony/flex' \
     \
     && `# Static analysis` \
-    && composer global require phpstan/phpstan-shim && mv /root/.composer/vendor/bin/phpstan.phar /usr/local/bin/phpstan \
+    && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan-shim' \
+    && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan-symfony' \
+    && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan-doctrine' \
+    && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan-phpunit' \
+    && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan-deprecation-rules' \
     && curl -L https://cs.symfony.com/download/php-cs-fixer-v2.phar -o /usr/local/bin/php-cs-fixer && chmod a+x /usr/local/bin/php-cs-fixer \
+    && curl -sSL https://get.sensiolabs.org/security-checker.phar -o /usr/local/bin/security-checker && chmod a+x /usr/local/bin/security-checker \
     \
     && `# ImageMagick` \
     && (curl -L "https://github.com/ImageMagick/ImageMagick/archive/${IMAGEMAGICK_VERSION}.tar.gz" | tar xz) \
@@ -109,18 +110,12 @@ RUN set -xe \
     && gzip -d /usr/local/bin/symfony.gz \
     && chmod +x /usr/local/bin/symfony \
     \
-    && `# User management for entrypoint` \
-    && curl -L -s -o /bin/gosu https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-$(dpkg --print-architecture | awk -F- '{ print $NF }') \
-    && chmod +x /bin/gosu \
-    && groupadd _www \
-    && adduser --home=/home --shell=/bin/bash --ingroup=_www --disabled-password --quiet --gecos "" --force-badname _www \
-    \
     && `# Clean apt and remove unused libs/packages to make image smaller` \
-    && composer clearcache \
-    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $BUILD_LIBS $REMOVE_LIBS \
+    && runuser -l $RUN_USER -c 'composer clearcache' \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $BUILD_LIBS \
     && apt-get -y autoremove \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/www/* /var/cache/* /root/.composer/cache
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/www/* /var/cache/* /home/.composer/cache
 
 WORKDIR /srv
 
