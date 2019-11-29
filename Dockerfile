@@ -7,10 +7,10 @@ ENV BLACKFIRE_CONFIG=/dev/null \
     GOSU_VERSION=1.11 \
     BLACKFIRE_SOCKET=tcp://0.0.0.0:8707 \
     PANTHER_NO_SANDBOX=1 \
-    IMAGEMAGICK_VERSION=7.0.8-50 \
+    IMAGEMAGICK_VERSION=7.0.9-6 \
     PATH=/home/.composer/vendor/bin:$PATH \
     RUN_USER="_www" \
-    SYMFONYCLI_VERSION="4.6.4"
+    SYMFONYCLI_VERSION="4.11.2"
 
 COPY bin/entrypoint.sh /bin/entrypoint
 COPY etc/php.ini /usr/local/etc/php/conf.d/99-custom.ini
@@ -84,6 +84,7 @@ RUN set -xe \
     && runuser -l ${RUN_USER} -c 'composer global require --prefer-dist symfony/flex' \
     \
     && `# Static analysis` \
+    && runuser -l ${RUN_USER} -c 'composer global require nunomaduro/phpinsights' \
     && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan-shim' \
     && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan-symfony' \
     && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan-doctrine' \
