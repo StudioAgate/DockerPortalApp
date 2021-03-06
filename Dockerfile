@@ -11,10 +11,7 @@ EXPOSE 8000
 ENTRYPOINT ["/bin/entrypoint"]
 
 ENV PHP_VERSION=7.4 \
-    BLACKFIRE_CONFIG=/dev/null \
-    BLACKFIRE_LOG_LEVEL=1 \
     GOSU_VERSION=1.12 \
-    BLACKFIRE_SOCKET=tcp://0.0.0.0:8707 \
     PANTHER_NO_SANDBOX=1 \
     PATH=/home/.composer/vendor/bin:$PATH \
     PATH=/home/.config/composer/vendor/bin:$PATH \
@@ -23,7 +20,6 @@ ENV PHP_VERSION=7.4 \
 COPY bin/entrypoint.sh /bin/entrypoint
 COPY etc/php.ini /etc/php/${PHP_VERSION}/fpm/conf.d/99-custom.ini
 COPY etc/php.ini /etc/php/${PHP_VERSION}/cli/conf.d/99-custom.ini
-COPY --from=blackfire/blackfire /usr/local/bin/blackfire* /usr/local/bin/
 
 RUN set -xe \
     && apt-get update \
