@@ -69,15 +69,15 @@ RUN set -xe \
     \
     && `# Composer` \
     && (curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer) \
-    && runuser -l ${RUN_USER} -c 'composer global require --prefer-dist symfony/flex' \
+    && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require --prefer-dist symfony/flex' \
     \
     && `# Static analysis` \
-    && runuser -l ${RUN_USER} -c 'composer global require nunomaduro/phpinsights' \
-    && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan' \
-    && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan-symfony' \
-    && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan-doctrine' \
-    && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan-phpunit' \
-    && runuser -l ${RUN_USER} -c 'composer global require phpstan/phpstan-deprecation-rules' \
+    && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require nunomaduro/phpinsights' \
+    && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require phpstan/phpstan' \
+    && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require phpstan/phpstan-symfony' \
+    && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require phpstan/phpstan-doctrine' \
+    && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require phpstan/phpstan-phpunit' \
+    && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require phpstan/phpstan-deprecation-rules' \
     && curl -L https://cs.symfony.com/download/php-cs-fixer-v2.phar -o /usr/local/bin/php-cs-fixer && chmod a+x /usr/local/bin/php-cs-fixer \
     \
     && `# ImageMagick` \
