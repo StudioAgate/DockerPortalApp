@@ -2,6 +2,14 @@ FROM debian:10-slim
 
 LABEL maintainer="pierstoval@gmail.com"
 
+WORKDIR /srv
+
+CMD ["symfony", "serve", "--dir=/srv", "--allow-http", "--port=8000"]
+
+EXPOSE 8000
+
+ENTRYPOINT ["/bin/entrypoint"]
+
 ENV PHP_VERSION=7.4 \
     BLACKFIRE_CONFIG=/dev/null \
     BLACKFIRE_LOG_LEVEL=1 \
@@ -52,13 +60,8 @@ RUN set -xe \
         php${PHP_VERSION}-readline \
         php${PHP_VERSION}-xml \
         php${PHP_VERSION}-zip \
-        php-xdebug \
-        php-apcu \
-        php-pcov \
-    \
-    && `# Disable some extensions by default for better performances. Use them at runtime.` \
-    && rm /etc/php/${PHP_VERSION}/cli/conf.d/20-xdebug.ini \
-    && rm /etc/php/${PHP_VERSION}/cli/conf.d/20-pcov.ini \
+        php${PHP_VERSION}-xdebug \
+        php${PHP_VERSION}-apcu \
     \
     && `# User management for entrypoint` \
     && curl -L -s -o /bin/gosu https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-$(dpkg --print-architecture | awk -F- '{ print $NF }') \
@@ -95,11 +98,3 @@ RUN set -xe \
     && apt-get -y autoremove \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /var/www/* /var/cache/* /home/.composer/cache
-
-WORKDIR /srv
-
-ENTRYPOINT ["/bin/entrypoint"]
-
-CMD ["symfony", "serve", "--dir=/srv", "--allow-http", "--port=8000"]
-
-EXPOSE 8000
