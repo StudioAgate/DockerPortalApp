@@ -77,6 +77,11 @@ RUN set -xe \
     && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require phpstan/phpstan-deprecation-rules' \
     && curl -L https://cs.symfony.com/download/php-cs-fixer-v2.phar -o /usr/local/bin/php-cs-fixer && chmod a+x /usr/local/bin/php-cs-fixer \
     \
+    && `# Symfony CLI` \
+    && (wget https://get.symfony.com/cli/installer -O - | bash) \
+    && mv /root/.symfony5/bin/symfony /usr/local/bin/symfony \
+    && chown ${RUN_USER}:${RUN_USER} /usr/local/bin/symfony \
+    \
     && `# Clean apt and remove unused libs/packages to make image smaller` \
     && runuser -l $RUN_USER -c 'composer clearcache' \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $BUILD_LIBS \
