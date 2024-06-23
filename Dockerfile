@@ -10,8 +10,8 @@ EXPOSE 8000
 
 ENTRYPOINT ["/bin/entrypoint"]
 
-ENV PHP_VERSION=7.4 \
-    GOSU_VERSION=1.12 \
+ENV PHP_VERSION=8.1 \
+    GOSU_VERSION=1.17 \
     PANTHER_NO_SANDBOX=1 \
     PATH=/home/.composer/vendor/bin:$PATH \
     PATH=/home/.config/composer/vendor/bin:$PATH \
@@ -49,7 +49,6 @@ RUN set -xe \
         php${PHP_VERSION}-fpm \
         php${PHP_VERSION}-gd \
         php${PHP_VERSION}-intl \
-        php${PHP_VERSION}-json \
         php${PHP_VERSION}-mbstring \
         php${PHP_VERSION}-mysql \
         php${PHP_VERSION}-opcache \
@@ -69,24 +68,14 @@ RUN set -xe \
     \
     && `# Composer` \
     && (curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer) \
-    && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require --prefer-dist symfony/flex' \
     \
     && `# Static analysis` \
-    && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require nunomaduro/phpinsights' \
     && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require phpstan/phpstan' \
     && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require phpstan/phpstan-symfony' \
     && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require phpstan/phpstan-doctrine' \
     && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require phpstan/phpstan-phpunit' \
     && runuser -l ${RUN_USER} -c 'composer global --no-interaction --no-progress require phpstan/phpstan-deprecation-rules' \
     && curl -L https://cs.symfony.com/download/php-cs-fixer-v2.phar -o /usr/local/bin/php-cs-fixer && chmod a+x /usr/local/bin/php-cs-fixer \
-    \
-    && `# ImageMagick` \
-    && apt-get install -y imagemagick \
-    \
-    && `# Symfony CLI` \
-    && (wget https://get.symfony.com/cli/installer -O - | bash) \
-    && mv /root/.symfony/bin/symfony /usr/local/bin/symfony \
-    && chown ${RUN_USER}:${RUN_USER} /usr/local/bin/symfony \
     \
     && `# Clean apt and remove unused libs/packages to make image smaller` \
     && runuser -l $RUN_USER -c 'composer clearcache' \
