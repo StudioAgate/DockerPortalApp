@@ -4,7 +4,7 @@ LABEL maintainer="pierstoval@gmail.com"
 
 WORKDIR /srv
 
-CMD ["symfony", "serve", "--dir=/srv", "--allow-http", "--port=8000"]
+CMD ["/usr/local/bin/symfony", "serve", "--dir=/srv", "--allow-http", "--port=8000"]
 
 EXPOSE 8000
 
